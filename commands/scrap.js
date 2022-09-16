@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { fetchMessages } = require('../services/fetchMessages');
-const fs = require('fs');
+const { databaseAddMessages } = require('../services/databaseAddMessages');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -9,8 +9,9 @@ module.exports = {
 	async execute(interaction) {
 		await interaction.deferReply();
 		const channel = interaction.client.channels.cache.get(interaction.channelId);
-		const messages = await fetchMessages(channel);
-		fs.writeFile('writeMe.txt', JSON.stringify(messages), () => {});
+		let messages = await fetchMessages(channel);
+		messages = (messages.filter(message => message.author.bot === false));
+		databaseAddMessages(messages);
 		await interaction.editReply(`scrapped ${messages.length} messages from this channel`);
 	},
 };
