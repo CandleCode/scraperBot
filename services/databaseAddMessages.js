@@ -6,12 +6,26 @@ const knex = require('knex')({
 	useNullAsDefault: true,
 });
 
-const insertMessages = async (messages) => {
-	const prepareUsers = messages.map(message => ({
+const reducer = (filteredUsers, message) => {
+	const userObject = {
 		user_id: message.author.id,
 		username: message.author.username,
-	}));
-	const prepareMessages = messages.map(message => ({
+	};
+	filteredUsers.set(message.author.id, userObject);
+	return filteredUsers;
+};
+
+const chunkAndExec = async (array, b) => {
+	for (let i = 0; i < array.length; i += 500) {
+		const chunkArray = array.slice(i, i + 500);
+		await b(chunkArray);
+	}
+};
+const insertMessages = async (plainMessages) => {
+
+	const cleanUsers = [ ...(plainMessages.reduce(reducer, new Map())).values()];
+
+	const cleanMessages = plainMessages.map(message => ({
 		message_id: message.id,
 		message: message.content,
 		user_id: message.author.id,
@@ -20,8 +34,15 @@ const insertMessages = async (messages) => {
 		channel_id: message.channelId,
 		guild_id: message.guildId,
 	}));
-	await knex('users').insert(prepareUsers).onConflict('user_id').ignore();
-	await knex('messages').insert(prepareMessages);
+
+	await chunkAndExec(cleanUsers, async (slicedArray) => {
+		await knex('users').insert(slicedArray).onConflict('user_id').ignore();
+	});
+
+	await chunkAndExec(cleanMessages, async (slicedArray) => {
+		await knex('messages').insert(slicedArray);
+	});
+
 };
 
 const databaseAddMessages = async (messages) => {
