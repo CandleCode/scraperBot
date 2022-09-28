@@ -32,8 +32,11 @@ const fetchMessages = async (channel) => {
 		setOptions();
 		messages = await channel.messages.fetch(options);
 		sumMessages = sumMessages.concat(Array.from(messages.values()));
-		messagePointer = isAfter ? messages.first().id : messages.last().id;
 		console.log(sumMessages.length, 'messages counted');
+		if (sumMessages.length === 0) {
+			break;
+		}
+		messagePointer = isAfter ? messages.first().id : messages.last().id;
 	} while (messages.size === 100);
 
 	return sumMessages;
