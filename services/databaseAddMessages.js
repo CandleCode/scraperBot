@@ -1,3 +1,4 @@
+const { logger } = require('../logger/logger');
 const knex = require('knex')({
 	client: 'sqlite3',
 	connection: {
@@ -46,7 +47,6 @@ const insertMessages = async (plainMessages) => {
 };
 
 const databaseAddMessages = async (messages) => {
-	console.time();
 
 	const usersExists = await knex.schema.hasTable('users');
 	if (!usersExists) {
@@ -70,8 +70,10 @@ const databaseAddMessages = async (messages) => {
 	}
 
 	await insertMessages(messages);
-	console.log('finished adding to db');
-	console.timeEnd();
+	logger.log({
+		level: 'info',
+		message: `added ${messages.length} message/s to the database successfully`,
+	});
 };
 
 module.exports = {

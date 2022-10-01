@@ -8,7 +8,6 @@ const getMessagesFromChannel = async (channelId, client) => {
 	if (messages.length !== 0) {
 		await databaseAddMessages(messages);
 	}
-	console.log(`scrapped ${messages.length} messages from channelId ${channelId}`);
 };
 
 module.exports = {
