@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const dotenv = require('dotenv');
+const { logger } = require('./logger/logger');
 dotenv.config();
 
 
@@ -46,7 +47,10 @@ client.on('interactionCreate', async interaction => {
 		await command.execute(interaction);
 	}
 	catch (error) {
-		console.error(error);
+		logger.log({
+			level: 'error',
+			message: error,
+		});
 		await interaction.reply({ content: 'There was an error while executing this command!', ephemeral:true });
 	}
 

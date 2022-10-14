@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { getMessagesFromChannel } = require('../services/getMessagesFromChannel');
 const { asyncQueue } = require('../services/AsyncQueue');
+const { logger } = require('../logger/logger');
 const knex = require('knex')({
 	client: 'sqlite3',
 	connection: {
@@ -29,6 +30,12 @@ module.exports = {
 			guild_id: interaction.guildId,
 		});
 		asyncQueue.enqueue(getMessagesFromChannel(interaction.channelId, interaction.client));
+
+		logger.log({
+			level: 'info',
+			message: `Bot bound to channel ${interaction.channelId} in ${interaction.guildId} `,
+		});
+
 		await interaction.editReply('successfully bound bot to this channel');
 	},
 };
