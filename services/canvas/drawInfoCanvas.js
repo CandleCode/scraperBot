@@ -63,7 +63,8 @@ const drawCanvas = async (emojiArray) => {
 const drawInfoCanvas = async (interaction) => {
 
 	const result = await knex.select('user_id', 'message').from('messages').where('message', 'like', '%<:%>%')
-		.andWhere('user_id', 'like', `${interaction.user.id}`);
+		.andWhere('user_id', 'like', `${interaction.user.id}`)
+		.andWhere('guild_id', 'like', `${interaction.guildId}`);
 	const emojiArray = result.reduce(parseEmojis, []).sort((a, b) => b.count - a.count).slice(0, 7);
 
 	const canvas = await drawCanvas(emojiArray);
