@@ -1,6 +1,6 @@
-const { boundChannels } = require('../services/BoundChannels');
+const { boundChannels } = require('../services/database/BoundChannels');
 const { asyncQueue } = require('../services/AsyncQueue');
-const { databaseAddMessages } = require('../services/databaseAddMessages');
+const { databaseAddMessages } = require('../services/database/databaseAddMessages');
 
 
 module.exports = {
@@ -10,7 +10,7 @@ module.exports = {
 			return;
 		}
 		if (boundChannels.checkMessageChannelIdExists(message.channelId)) {
-			asyncQueue.enqueue(databaseAddMessages([ message ]));
+			asyncQueue.enqueue(() => databaseAddMessages([ message ]));
 		}
 	},
 };

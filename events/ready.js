@@ -1,6 +1,6 @@
-const { getMessagesFromBoundChannels } = require('../services/getMessagesFromBoundChannels');
+const { getMessagesFromBoundChannels } = require('../services/database/getMessagesFromBoundChannels');
 const { asyncQueue } = require('../services/AsyncQueue');
-const { boundChannels } = require('../services/BoundChannels');
+const { boundChannels } = require('../services/database/BoundChannels');
 const { logger } = require('../logger/logger');
 
 module.exports = {
@@ -8,7 +8,7 @@ module.exports = {
 	once: true,
 	async execute(client) {
 		await boundChannels.fetchIds();
-		asyncQueue.enqueue(getMessagesFromBoundChannels(client));
+		asyncQueue.enqueue(() => getMessagesFromBoundChannels(client));
 
 		logger.log({
 			level: 'info',

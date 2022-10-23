@@ -8,11 +8,13 @@ class AsyncQueue {
 		await this.nextJob();
 	}
 	async nextJob() {
-		if (this.isBusy) return;
+		if (this.isBusy) {
+			return;
+		}
 		const next = this.queue.shift();
 		if (next) {
 			this.isBusy = true;
-			await next;
+			await next();
 			this.isBusy = false;
 			await this.nextJob();
 		}
