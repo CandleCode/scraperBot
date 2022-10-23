@@ -1,4 +1,4 @@
-const { logger } = require('../logger/logger');
+const { logger } = require('../../logger/logger');
 const knex = require('knex')({
 	client: 'sqlite3',
 	connection: {
