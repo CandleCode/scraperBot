@@ -45,17 +45,26 @@ const drawCanvas = async (emojiArray) => {
 	const canvas = createCanvas(width, height);
 	const ctx = canvas.getContext('2d');
 
-	for (const [index, value] of emojiArray.entries()) {
-		const imageResponse = await axios.get(`https://cdn.discordapp.com/emojis/${value.id}.webp?size=44&quality=lossless`, {
-			responseType: 'arraybuffer',
-		});
-		const img = await sharp(imageResponse.data).toFormat('png').toBuffer();
-		const image = await loadImage(img);
-		ctx.drawImage(image, 0, (index * 50 + 18));
+	const chart = await drawChartCanvas(emojiArray);
+
+	if (chart) {
+		for (const [index, value] of emojiArray.entries()) {
+			const imageResponse = await axios.get(`https://cdn.discordapp.com/emojis/${value.emoji_id}.webp?size=44&quality=lossless`, {
+				responseType: 'arraybuffer',
+			});
+			const img = await sharp(imageResponse.data).toFormat('png').toBuffer();
+			const image = await loadImage(img);
+			ctx.drawImage(image, 0, (index * 50 + 18));
+		}
+		const chartImage = await loadImage(chart);
+		ctx.drawImage(chartImage, 56, 0);
 	}
-	const test = await drawChartCanvas(emojiArray);
-	const chartImage = await loadImage(test);
-	ctx.drawImage(chartImage, 56, 0);
+	else {
+		ctx.font = '30px Comic Sans MS';
+		ctx.fillStyle = '#ffffff';
+		ctx.textAlign = 'center';
+		ctx.fillText('No emoji data yet! 🐾‍', width / 2, height / 2);
+	}
 
 	return canvas;
 };
@@ -74,7 +83,7 @@ const drawInfoCanvas = async (interaction) => {
 	const embed = new EmbedBuilder()
 		.setColor(0x0099FF)
 		.setAuthor({ name: `${interaction.user.username}#${interaction.user.discriminator}`, iconURL: interaction.user.displayAvatarURL({ dynamic: true }) })
-		.setDescription('whoa that is a lot of messages')
+		.setDescription(`${totalEmojiCount} emoji total found for this user.`)
 		.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
 		.setImage('attachment://chart.png')
 		.setTimestamp();

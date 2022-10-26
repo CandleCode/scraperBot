@@ -5,8 +5,7 @@ const drawChartCanvas = async (emojiList) => {
 	const countArray = emojiList.map((emoji) => {
 		return emoji.count;
 	});
-	console.log(countArray);
-
+	if (!emojiList) return;
 	const configuration = {
 		type: 'bar',
 		data: {
