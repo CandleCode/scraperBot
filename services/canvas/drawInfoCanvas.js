@@ -11,34 +11,6 @@ const knex = require('knex')({
 	useNullAsDefault: true,
 });
 
-const parseMessageEmojis = (message) => {
-	const emojis = message.match(/<a?:([^:>]{2,}):(\d+)>/g) || [];
-
-	return emojis.map(getEmojiData);
-};
-
-const getEmojiData = (source) => {
-	const [emoji, name, id] = source.match(/<a?:([^:>]{2,}):(\d+)>/);
-
-	return { emoji, name, id };
-};
-
-const parseEmojis = (array, message) => {
-	const emojiArray = parseMessageEmojis(message.message);
-	if (emojiArray) {
-		emojiArray.forEach((emoji) => {
-			const index = array.findIndex((value) => value.id === emoji.id);
-			if (index === -1) {
-				array.push({ ...emoji, count: 1 });
-				return;
-			}
-			array[index].count++;
-		});
-	}
-
-	return array;
-};
-
 const drawCanvas = async (emojiArray) => {
 	const width = 450;
 	const height = 400;
@@ -70,14 +42,21 @@ const drawCanvas = async (emojiArray) => {
 };
 
 const drawInfoCanvas = async (interaction) => {
+	const result = await knex
+		.from('messages')
+		.innerJoin('Messages_Emoji', 'messages.message_id', '=', 'Messages_Emoji.message_id')
+		.innerJoin('emoji', 'Messages_Emoji.emoji_id', '=', 'emoji.emoji_id')
+		.select('emoji.emoji_name', knex.raw('CAST (emoji.emoji_id AS CHAR) AS emoji_id'))
+		.count('emoji.emoji_name AS count')
+		.whereNotNull('emoji.emoji_id')
+		.andWhere('messages.user_id', 'like', `${interaction.user.id}`)
+		.andWhere('messages.guild_id', 'like', `${interaction.guildId}`)
+		.groupBy(['emoji.emoji_name', 'emoji.emoji_id']);
 
-	const result = await knex.select('user_id', 'message').from('messages').where('message', 'like', '%<:%>%')
-		.andWhere('user_id', 'like', `${interaction.user.id}`)
-		.andWhere('guild_id', 'like', `${interaction.guildId}`);
-	const emojiArray = result.reduce(parseEmojis, []).sort((a, b) => b.count - a.count).slice(0, 7);
+	const emojiArray = result.sort((a, b) => b.count - a.count);
+	const totalEmojiCount = emojiArray.reduce((total, emoji) => total + emoji.count, 0);
 
-	const canvas = await drawCanvas(emojiArray);
-
+	const canvas = await drawCanvas(emojiArray.slice(0, 7));
 	const file = new AttachmentBuilder(canvas.toBuffer(), { name: 'chart.png', description:'canvas of chart' });
 
 	const embed = new EmbedBuilder()
