@@ -25,6 +25,7 @@ if (process.env.NODE_ENV !== 'production') {
 				format.align(),
 				format.printf((info) => `[${info.timestamp}] ${info.level}: ${info.message}`),
 			),
+			handleExceptions:true,
 		},
 	));
 }
