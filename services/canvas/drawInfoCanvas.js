@@ -11,6 +11,46 @@ const knex = require('knex')({
 	useNullAsDefault: true,
 });
 
+const retrieveEmoji = (interaction) => {
+	const user = interaction.options.getUser('user');
+	if (user) {
+		return knex
+			.from('messages')
+			.innerJoin('Messages_Emoji', 'messages.message_id', '=', 'Messages_Emoji.message_id')
+			.innerJoin('emoji', 'Messages_Emoji.emoji_id', '=', 'emoji.emoji_id')
+			.select('emoji.emoji_name', knex.raw('CAST (emoji.emoji_id AS CHAR) AS emoji_id'))
+			.count('emoji.emoji_name AS count')
+			.whereNotNull('emoji.emoji_id')
+			.andWhere('messages.user_id', 'like', `${user.id}`)
+			.andWhere('messages.guild_id', 'like', `${interaction.guildId}`)
+			.groupBy(['emoji.emoji_name', 'emoji.emoji_id']);
+	}
+	if (interaction.options.getSubcommand(false) === 'info') {
+		return knex
+			.from('messages')
+			.innerJoin('Messages_Emoji', 'messages.message_id', '=', 'Messages_Emoji.message_id')
+			.innerJoin('emoji', 'Messages_Emoji.emoji_id', '=', 'emoji.emoji_id')
+			.select('emoji.emoji_name', knex.raw('CAST (emoji.emoji_id AS CHAR) AS emoji_id'))
+			.count('emoji.emoji_name AS count')
+			.whereNotNull('emoji.emoji_id')
+			.andWhere('messages.guild_id', 'like', `${interaction.guildId}`)
+			.groupBy(['emoji.emoji_name', 'emoji.emoji_id']);
+	}
+	else {
+		return knex
+			.from('messages')
+			.innerJoin('Messages_Emoji', 'messages.message_id', '=', 'Messages_Emoji.message_id')
+			.innerJoin('emoji', 'Messages_Emoji.emoji_id', '=', 'emoji.emoji_id')
+			.select('emoji.emoji_name', knex.raw('CAST (emoji.emoji_id AS CHAR) AS emoji_id'))
+			.count('emoji.emoji_name AS count')
+			.whereNotNull('emoji.emoji_id')
+			.andWhere('messages.user_id', 'like', `${interaction.user.id}`)
+			.andWhere('messages.guild_id', 'like', `${interaction.guildId}`)
+			.groupBy(['emoji.emoji_name', 'emoji.emoji_id']);
+	}
+
+};
+
 const drawCanvas = async (emojiArray) => {
 	const width = 450;
 	const height = 400;
@@ -42,16 +82,10 @@ const drawCanvas = async (emojiArray) => {
 };
 
 const drawInfoCanvas = async (interaction) => {
-	const result = await knex
-		.from('messages')
-		.innerJoin('Messages_Emoji', 'messages.message_id', '=', 'Messages_Emoji.message_id')
-		.innerJoin('emoji', 'Messages_Emoji.emoji_id', '=', 'emoji.emoji_id')
-		.select('emoji.emoji_name', knex.raw('CAST (emoji.emoji_id AS CHAR) AS emoji_id'))
-		.count('emoji.emoji_name AS count')
-		.whereNotNull('emoji.emoji_id')
-		.andWhere('messages.user_id', 'like', `${interaction.user.id}`)
-		.andWhere('messages.guild_id', 'like', `${interaction.guildId}`)
-		.groupBy(['emoji.emoji_name', 'emoji.emoji_id']);
+
+	const result = await retrieveEmoji(interaction);
+
+	const user = interaction.options.getUser('user') ?? interaction.user;
 
 	const emojiArray = result.sort((a, b) => b.count - a.count);
 	const totalEmojiCount = emojiArray.reduce((total, emoji) => total + emoji.count, 0);
@@ -59,11 +93,22 @@ const drawInfoCanvas = async (interaction) => {
 	const canvas = await drawCanvas(emojiArray.slice(0, 7));
 	const file = new AttachmentBuilder(canvas.toBuffer(), { name: 'chart.png', description:'canvas of chart' });
 
+	if (interaction.options.getSubcommand(false) === 'info') {
+		const embed = new EmbedBuilder()
+			.setColor(0x0099FF)
+			.setAuthor({ name: interaction.guild.name, iconURL: interaction.guild.iconURL({ dynamic: true }) })
+			.setDescription(`${totalEmojiCount} emoji total found for this server`)
+			.setThumbnail(interaction.guild.iconURL({ dynamic: true }))
+			.setImage('attachment://chart.png')
+			.setTimestamp();
+		return { file, embed };
+	}
+
 	const embed = new EmbedBuilder()
 		.setColor(0x0099FF)
-		.setAuthor({ name: `${interaction.user.username}#${interaction.user.discriminator}`, iconURL: interaction.user.displayAvatarURL({ dynamic: true }) })
-		.setDescription(`${totalEmojiCount} emoji total found for this user.`)
-		.setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
+		.setAuthor({ name: `${user.username}#${user.discriminator}`, iconURL: user.displayAvatarURL({ dynamic: true }) })
+		.setDescription(`${totalEmojiCount} emoji total found`)
+		.setThumbnail(user.displayAvatarURL({ dynamic: true }))
 		.setImage('attachment://chart.png')
 		.setTimestamp();
 
